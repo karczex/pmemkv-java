@@ -22,9 +22,8 @@ deps_dir=$(mktemp -d)
 git clone https://github.com/pmem/pmemkv-java.git ${deps_dir}
 pushd ${deps_dir}
 git checkout $JAVA_VERSION
-mvn dependency:go-offline
 mvn install -Dmaven.test.skip=true
-mv -v ~/.m2/repository /opt/java/
+mvn dependency:go-offline
 
 # remove any installed pmemkv's libs
 rm -r /opt/java/repository/io/pmem/*

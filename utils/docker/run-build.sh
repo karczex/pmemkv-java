@@ -21,14 +21,17 @@ function run_example() {
 
 # install pmemkv
 pmemkv_version=$1
-cd /opt/pmemkv-$pmemkv_version/
-if [ "${PACKAGE_MANAGER}" = "deb" ]; then
-	echo $USERPASS | sudo -S dpkg -i libpmemkv*.deb
-elif [ "${PACKAGE_MANAGER}" = "rpm" ]; then
-	echo $USERPASS | sudo -S rpm -i libpmemkv*.rpm
-else
-	echo "PACKAGE_MANAGER env variable not set or set improperly ('deb' or 'rpm' supported)."
-	exit 1
+if [! -z "$pmemkv_version" ]
+then
+	cd /opt/pmemkv-$pmemkv_version/
+	if [ "${PACKAGE_MANAGER}" = "deb" ]; then
+		echo $USERPASS | sudo -S dpkg -i libpmemkv*.deb
+	elif [ "${PACKAGE_MANAGER}" = "rpm" ]; then
+		echo $USERPASS | sudo -S rpm -i libpmemkv*.rpm
+	else
+		echo "PACKAGE_MANAGER env variable not set or set improperly ('deb' or 'rpm' supported)."
+		exit 1
+	fi
 fi
 
 echo
