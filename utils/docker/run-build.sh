@@ -39,8 +39,6 @@ echo "###########################################################"
 echo "### Verifying building and installing of the java bindings"
 echo "###########################################################"
 cd $WORKDIR
-mkdir -p ~/.m2/repository
-cp -r /opt/java/repository ~/.m2/
 mvn install -e
 
 echo
