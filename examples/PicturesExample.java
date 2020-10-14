@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: BSD-3-Clause
 /* Copyright 2020, Intel Corporation */
 
+/* [I want to show how to implement simple.. ]
+ * This is the example of using pmemkv-java binding in simlpe, real life application.
+ * It loads png files from specified directory, stores it into pmemkv, and display to the screen
+ * As persistent pmemkv  engine was used, it's possible to load  pictures ones, and
+ * read it from persistent storage  in next runs of application.
+ */
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import javax.swing.JFrame;
@@ -15,6 +21,7 @@ import io.pmem.pmemkv.Converter;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
+
 
 class ByteBufferBackedInputStream extends InputStream {
 
@@ -53,6 +60,16 @@ class StringConverter implements Converter<String> {
 	}
 }
 
+/*
+ * As pmemkv-java binding is java wrapper on c++ library, it internally relays on java natinve interface, so it allows to store only ByteBuffer objects.
+ *  As it's not very convinient to operate on ByteBuffers inside high level application, additional layer of converters was introduced.
+ *  It's posible to store, in the pmemkv, objects of any (even user defined) type, as long as appropriate converter class is delivered.
+ *  Such class needs to implement Converter jeneric interface. Such class have to implement just two methods:
+ *  # toByteBuffer() - which provides method to convert (serialize) objects to BYteBuffer
+ *  # fromByteBuffer() - which provides method to conver objects back.
+ *
+ */
+
 class ImageConverter implements Converter<BufferedImage> {
 	public ByteBuffer toByteBuffer(BufferedImage entry) {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -80,6 +97,12 @@ public class PicturesExample extends Canvas {
 	private Database<String, BufferedImage> db;
 	private String engine = "cmap";
 
+/*
+ * Database is generic class, which needs to be "parametrized" by key and value type.
+ * Database constructor implements Builder pattern. Parameters, which are needed to be set during Database object creation highly depends on choosen pmemkv  engine. [link to pmemkv readme];
+ * however setValueConverter() and setKeyConverter() always needs to be called, and it's types has to corespond with Database key and value types.
+ * Choice of engine is probably most important part of designing application, which uses pmemkv.
+ */
 	public PicturesExample(String Path, int size) {
 		System.out.println("Creating new database in path: " + Path + " with size: " + size);
 		db = new Database.Builder<String, BufferedImage>(engine)
@@ -90,7 +113,6 @@ public class PicturesExample extends Canvas {
 				.setForceCreate(true)
 				.build();
 	}
-
 	public PicturesExample(String Path) {
 		System.out.println("Using already existing database: " + Path);
 		db = new Database.Builder<String, BufferedImage>(engine)
@@ -111,6 +133,9 @@ public class PicturesExample extends Canvas {
 			} catch (IOException e) {
 				System.exit(1);
 			}
+/*
+ * To store any object in pmemkv database, user should just call put ...
+ * */		
 			db.put(image.getName(), image_buffer);
 		}
 	}
@@ -118,6 +143,10 @@ public class PicturesExample extends Canvas {
 	public void paint(Graphics g) {
 		System.out.println("Draw images from pmemkv database");
 		AtomicInteger yPosition = new AtomicInteger(0);
+/* Operating on stored data
+ * There is group of get*() methods, which gets lambda expressions, and can operate directly on data stored in
+ * persistent memory, without copying. 
+ * */
 		db.getAll((k, v) -> {
 			System.out.println("\tDraw" + k);
 			Graphics2D g2 = (Graphics2D) g;
@@ -160,3 +189,10 @@ public class PicturesExample extends Canvas {
 		f.setVisible(true);
 	}
 }
+
+/* What's next?
+ * 
+ * # As pmemkv-java 1.0 API is compatibile with pmemkv 1.0 API, in upcomming releases
+ *  we are going to imlement most important features avialable in next pmemkv releases.
+ * # predefined converters for most comon types (patches are welcomed)
+ * */
