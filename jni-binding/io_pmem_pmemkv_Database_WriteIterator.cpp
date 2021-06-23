@@ -3,6 +3,20 @@
 
 #include <common.h>
 
+
+template <typename Function>
+jboolean boilerplate_seek(JNIEnv *env, jlong ptr, jobject key,  Function f) {
+  auto w_it = reinterpret_cast<pmem::kv::db::write_iterator*>(ptr);
+  const char* ckey = reinterpret_cast<char*>(env->GetDirectBufferAddress(key));
+  pmem::kv::status status = f(w_it, ckey);
+
+  if (status == pmem::kv::status::OK || status == pmem::kv::status::NOT_FOUND) {
+    return status == pmem::kv::status::OK;
+  }
+  PmemkvJavaException(env).ThrowException(status);
+  return false;
+}
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -33,15 +47,9 @@ Java_io_pmem_pmemkv_Database_00024WriteIterator_iterator_1new_1write_1iterator(J
  */
 JNIEXPORT jboolean JNICALL Java_io_pmem_pmemkv_Database_00024WriteIterator_iterator_1seek
   (JNIEnv *env, jobject, jlong ptr, jobject key) {
-  auto w_it = reinterpret_cast<pmem::kv::db::write_iterator*>(ptr);
-  const char* ckey = reinterpret_cast<char*>(env->GetDirectBufferAddress(key));
-  auto status = w_it->seek(ckey);
-
-  if (status == pmem::kv::status::OK || status == pmem::kv::status::NOT_FOUND) {
-    return status == pmem::kv::status::OK;
-  }
-  PmemkvJavaException(env).ThrowException(status);
-  return false;
+  return boilerplate_seek(env, ptr, key, [](pmem::kv::db::write_iterator *w_it , const char* ckey) -> pmem::kv::status {
+	return w_it->seek(ckey);
+  });
 }
 
 /*
